@@ -1,93 +1,147 @@
 #include <iostream>
-
 #include <graphics.h>
+#include <cmath>
 
 using namespace std;
 
-int X_OFFSET=150, Y_OFFSET=100, CELL_SIZE=100;
+const int x = 150, y = 100, latura = 100;
+const int DIMENSIUNE_TABLA = 3;
 
-void OpenGraph()
+int tabla[DIMENSIUNE_TABLA][DIMENSIUNE_TABLA] = {0}; // Matrice logică: 0 = gol, >0 = dimensiunea piesei
+int centruX, centruY, raza;
 
-{
-
-	 int gd=DETECT,gm;
-
-	initgraph(&gd,&gm,"c:\\bc\\bgi");
-
+void deschideGrafica() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, "c:\\tc\\bgi");
 }
 
-
-
-void drawBoard() {
-
-    setfillstyle(SOLID_FILL,MAGENTA);
-
-    for (int i = 1; i < 3; i++) {
-
-
+void deseneazaTabla() {
+       for (int i = 1; i < 3; i++) {
 
         setcolor(GREEN);
-
-        line(X_OFFSET, Y_OFFSET + i * CELL_SIZE, X_OFFSET + 3 * CELL_SIZE, Y_OFFSET + i * CELL_SIZE);
-
-
+        line(x, y + i * latura, x + 3 * latura, y + i * latura);
 
     }
-
     for (int i = 1; i< 3; i++) {
-
         setcolor(FOREGROUND_RED );
-
-        line(X_OFFSET + i * CELL_SIZE, Y_OFFSET, X_OFFSET + i * CELL_SIZE, Y_OFFSET + 3 * CELL_SIZE);
-
+        line(x + i * latura, y, x + i * latura, y + 3 * latura);
     }
-
-
-
 }
 
+void deseneazaCerc(int cx, int cy, int r, int culoare) {
+    setcolor(culoare);
+    setfillstyle(SOLID_FILL, culoare);
+    fillellipse(cx, cy, r, r);
+}
 
+void deseneazaPioni() {
+    for (int i = 1; i <= 3; i++) {
+        deseneazaCerc(30, 50 + 65 * i, 10 * i, RED);
+        deseneazaCerc(100, 50 + 65 * i, 10 * i, RED);
+        deseneazaCerc(getmaxx() - 30, 50 + 65 * i, 10 * i, GREEN);
+        deseneazaCerc(getmaxx() - 100, 50 + 65 * i, 10 * i, GREEN);
+    }
+}
 
-int main()
+bool esteClickInCerc(int clickX, int clickY, int centruX, int centruY, int raza) {
+    int dx = clickX - centruX;
+    int dy = clickY - centruY;
+    return (dx * dx + dy * dy) <= (raza * raza);
+}
 
-{
+bool poatePunePiesa(int linie, int coloana, int dimensiune) {
+    return tabla[linie][coloana] == 0 || tabla[linie][coloana] < dimensiune;
+}
 
-    OpenGraph();
+void actualizeazaTabla(int linie, int coloana, int dimensiune) {
+    tabla[linie][coloana] = dimensiune;
+}
 
-    settextstyle(3,HORIZ_DIR,4);
+void gestioneazaMutari() {
+    bool selectat = false;
+    int culoareSelectata = 0;
+    int dimensiuneSelectata = 0;
 
-	settextjustify(CENTER_TEXT,CENTER_TEXT);
+    while (true) {
+        if (ismouseclick(WM_LBUTTONDOWN)) {
+            clearmouseclick(WM_LBUTTONDOWN);
+            int mouseX = mousex();
+            int mouseY = mousey();
 
-	
+            if (!selectat) {
+                // Selectarea unui pion
+                for (int i = 1; i <= 3; i++) {
+                    // Pioni roșii
+                    if (mouseX < 150) {
+                        centruX = (mouseX < 65) ? 30 : 100;
+                        centruY = 50 + 65 * i;
+                        raza = 10 * i;
 
-	setcolor(RED);
+                        if (esteClickInCerc(mouseX, mouseY, centruX, centruY, raza)) {
+                            selectat = true;
+                            culoareSelectata = RED;
+                            dimensiuneSelectata = 10 * i;
+                            setcolor(BLACK);
+                            setfillstyle(SOLID_FILL, BLACK);
+                            fillellipse(centruX, centruY, raza, raza);
+                            break;
+                        }
+                    }
+                    // Pioni verzi
+                    if (mouseX > getmaxx() - 150) {
+                        centruX = (mouseX > getmaxx() - 65) ? getmaxx() - 30 : getmaxx() - 100;
+                        centruY = 50 + 65 * i;
+                        raza = 10 * i;
 
-	outtextxy(320,25,"GOBBLET ");
+                        if (esteClickInCerc(mouseX, mouseY, centruX, centruY, raza)) {
+                            selectat = true;
+                            culoareSelectata = GREEN;
+                            dimensiuneSelectata = 10 * i;
+                            setcolor(BLACK);
+                            setfillstyle(SOLID_FILL, BLACK);
+                            fillellipse(centruX, centruY, raza, raza);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Mutarea pionului pe tablă
+                int linie = (mouseY - y) / latura;
+                int coloana = (mouseX - x) / latura;
 
-	
+                if (linie >= 0 && linie < DIMENSIUNE_TABLA && coloana >= 0 && coloana < DIMENSIUNE_TABLA) {
+                    if (poatePunePiesa(linie, coloana, dimensiuneSelectata)) {
+                        centruX = x + coloana * latura + latura / 2;
+                        centruY = y + linie * latura + latura / 2;
 
-	setcolor(GREEN);
+                    
+                        deseneazaCerc(centruX, centruY, dimensiuneSelectata, culoareSelectata);
 
-	outtextxy(320, 50, "GOBBLERS");
+                        actualizeazaTabla(linie, coloana, dimensiuneSelectata);
 
-    
+                        selectat = false; 
+                    }
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    deschideGrafica();
+
+    settextstyle(3, HORIZ_DIR, 4);
+    settextjustify(CENTER_TEXT, CENTER_TEXT);
+    setcolor(RED);
+    outtextxy(320, 25, "GOBBLET");
+    setcolor(GREEN);
+    outtextxy(320, 50, "GOBBLERS");
 
     setbkcolor(WHITE);
+    deseneazaTabla();
+    deseneazaPioni();
+    gestioneazaMutari();
 
-	
-
-	bar(30, 60,getmaxx()-30,getmaxy()-30);
-
-    
-
-    drawBoard();
-
-    
-
-    getch();
-
-	closegraph();
-
+    closegraph();
     return 0;
-
 }
