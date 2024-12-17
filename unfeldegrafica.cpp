@@ -1,13 +1,107 @@
 #include <iostream>
 #include <graphics.h>
 #include <cmath>
-
+#include "menu"
 using namespace std;
+void deseneazaMeniuPrincipal() {
+   //cleardevice();
+//readimagefile("poza.bmp",100,110,200,200);
+    settextstyle(3, HORIZ_DIR, 4);
+    settextjustify(CENTER_TEXT, CENTER_TEXT);
+    setcolor(RED);
+    outtextxy(320, 100, "GOBBLET");
+    setcolor(GREEN);
+    outtextxy(320, 50, "GOBBLERS");
+
+    settextstyle(BOLD_FONT, HORIZ_DIR, 3);
+    setcolor(WHITE);
+
+    rectangle(200, 200, 440, 260);
+    outtextxy(310, 230, "1. Start Joc");
+
+    rectangle(200, 280, 440, 340);
+    outtextxy(310, 310, "2. Instructiuni");
+
+    rectangle(200, 360, 440, 420);
+    outtextxy(310, 400, "3. Iesire");
+      readimagefile("gg.bmp",0,0,getmaxx(),getmaxy());
+}
+void cumjoci()
+{
+    cleardevice();
+    settextstyle(3, HORIZ_DIR, 4);
+    settextjustify(CENTER_TEXT, CENTER_TEXT);
+    setcolor(RED);
+    outtextxy(320, 100, "GOBBLET");
+    setcolor(GREEN);
+    outtextxy(320, 50, "GOBBLERS");
+
+    settextstyle(BOLD_FONT, HORIZ_DIR, 3);
+    setcolor(WHITE);
+
+    rectangle(200, 200, 480, 260);
+    outtextxy(330, 230, "SINGLEPLAYER-vs-PC");
+
+    rectangle(200, 280, 480, 340);
+    outtextxy(330, 310, "MULTIPLAYER");
+}
+/*int gestioneazacumjoci()
+{
+int x, y;
+    while (true) {
+        if (ismouseclick(WM_LBUTTONDOWN)) {
+            getmouseclick(WM_LBUTTONDOWN, x, y);
+
+            if (x >= 200 && x <= 480 && y >= 200 && y <= 260) {
+                return 1;
+            }
+            else if (x >= 200 && x <= 480 && y >= 280 && y <= 340) {
+                return 2;
+        }
+    }
+}
+}*/
+int gestioneazaIntrariMeniu() {
+    int x, y;
+    while (true) {
+        if (ismouseclick(WM_LBUTTONDOWN)) {
+            getmouseclick(WM_LBUTTONDOWN, x, y);
+
+            if (x >= 200 && x <= 440 && y >= 200 && y <= 260) {
+                return 1;
+            }
+            else if (x >= 200 && x <= 440 && y >= 280 && y <= 340) {
+                return 2;
+            }
+            else if (x >= 200 && x <= 440 && y >= 360 && y <= 420) {
+                return 3;
+            }
+        }
+    }
+}
+
+void afiseazaInstrucțiuni() {
+    cleardevice();
+    setbkcolor(BLACK);
+    //clearviewport();
+    settextstyle(SIMPLEX_FONT, HORIZ_DIR, 2);
+    setcolor(YELLOW);
+    outtextxy(320, 100, "INSTRUCTIUNI");
+
+    settextstyle(SIMPLEX_FONT, HORIZ_DIR, 1);
+    setcolor(WHITE);
+    outtextxy(300, 150, "1. Selecteaza pionul pe care doresti sa il muti.");
+    outtextxy(300, 180, "2. Aseaza pionul pe o casuta goala sau peste unul mai mic.");
+    outtextxy(300, 210, "3. Castiga prin alinierea a 3 piese de aceeasi culoare.");
+    outtextxy(300, 240, "4. Pentru a reveni, apasa click oriunde.");
+
+    clearmouseclick(WM_LBUTTONDOWN);
+}
 
 const int x = 150, y = 100, latura = 100;
 const int DIMENSIUNE_TABLA = 3;
 
-int tabla[DIMENSIUNE_TABLA][DIMENSIUNE_TABLA] = {0}; // Matrice logică: 0 = gol, >0 = dimensiunea piesei
+int tabla[DIMENSIUNE_TABLA][DIMENSIUNE_TABLA] = {0};
 int centruX, centruY, raza;
 
 void deschideGrafica() {
@@ -114,12 +208,12 @@ void gestioneazaMutari() {
                         centruX = x + coloana * latura + latura / 2;
                         centruY = y + linie * latura + latura / 2;
 
-                    
+
                         deseneazaCerc(centruX, centruY, dimensiuneSelectata, culoareSelectata);
 
                         actualizeazaTabla(linie, coloana, dimensiuneSelectata);
 
-                        selectat = false; 
+                        selectat = false;
                     }
                 }
             }
@@ -128,20 +222,57 @@ void gestioneazaMutari() {
 }
 
 int main() {
+
     deschideGrafica();
 
-    settextstyle(3, HORIZ_DIR, 4);
-    settextjustify(CENTER_TEXT, CENTER_TEXT);
-    setcolor(RED);
-    outtextxy(320, 25, "GOBBLET");
-    setcolor(GREEN);
-    outtextxy(320, 50, "GOBBLERS");
+    while (true) {
+        deseneazaMeniuPrincipal();
+        int optiune = gestioneazaIntrariMeniu();
 
-    setbkcolor(WHITE);
-    deseneazaTabla();
-    deseneazaPioni();
-    gestioneazaMutari();
+        if (optiune == 1) {
+            while (true) {
+                cumjoci();
+                int mod = gestioneazacumjoci();
+                if(mod==1)
+                {
+            cleardevice();settextstyle(3, HORIZ_DIR, 4);
+            settextjustify(CENTER_TEXT, CENTER_TEXT);
+            setcolor(RED);
+            outtextxy(320, 25, "GOBBLET");
+            setcolor(GREEN);
+            outtextxy(320, 50, "GOBBLERS");
 
-    closegraph();
+            setbkcolor(WHITE);
+            deseneazaTabla();
+            deseneazaPioni();
+            gestioneazaMutari();
+                }
+
+            else{
+            cleardevice();
+            settextstyle(3, HORIZ_DIR, 4);
+            settextjustify(CENTER_TEXT, CENTER_TEXT);
+            setcolor(RED);
+            outtextxy(320, 25, "GOBBLET");
+            setcolor(GREEN);
+            outtextxy(320, 50, "GOBBLERS");
+
+            setbkcolor(WHITE);
+            deseneazaTabla();
+            deseneazaPioni();
+            gestioneazaMutari();
+            }
+        }
+        }
+        else if (optiune == 2)
+            afiseazaInstrucțiuni();
+
+        else if (optiune == 3) {
+
+            closegraph();
+            exit(0);
+        }
+    }
+
     return 0;
 }
