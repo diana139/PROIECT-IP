@@ -1,0 +1,340 @@
+#include <iostream>
+#include <graphics.h>
+
+using namespace std;
+struct piesa{
+    int player;
+    int dimensiune;///1-mic  2-mediu   3-mare
+    bool peTabla;
+    piesa *sub;
+};
+
+struct cell{
+    int ctPiese;
+    piesa *stiva;
+};
+int winner;
+cell T[3][3];  ///TABLA DE JOC
+piesa P[2][6]; ///Cei 2 PLAYERI
+int nrPiesa,linie,coloana;
+bool testOpt;
+const int x = 150, y = 100, latura = 100;
+
+void deschideGrafica() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, "c:\\tc\\bgi");
+}
+void deseneazaCerc(int cx, int cy, int r, int culoare) {
+    setcolor(culoare);
+    setfillstyle(SOLID_FILL, culoare);
+    fillellipse(cx, cy, r, r);
+}
+void initTabla() {
+       for (int i = 1; i < 3; i++) {
+
+        setcolor(GREEN);
+        line(x, y + i * latura, x + 3 * latura, y + i * latura);
+
+    }
+    for (int i = 1; i< 3; i++) {
+        setcolor(FOREGROUND_RED );
+        line(x + i * latura, y, x + i * latura, y + 3 * latura);
+    }
+
+int idx = 0;
+for(int i = 1; i <= 3; i++)
+{
+     deseneazaCerc(30, 50 + 65 * i, 10 * i, RED);
+      P[0][idx].player = 1;
+        P[0][idx].dimensiune = i*10;
+        P[0][idx].peTabla = false;
+        P[0][idx].sub = nullptr;
+        idx++;
+     deseneazaCerc(100, 50 + 65 * i, 10 * i, RED);
+      P[0][idx].player = 1;
+        P[0][idx].dimensiune = i;
+        P[0][idx].peTabla = false;
+        P[0][idx].sub = nullptr;
+        idx++;
+}
+idx = 0;
+for(int i = 1; i <= 3; i++)
+{
+     deseneazaCerc(getmaxx() - 30, 50 + 65 * i, 10 * i, GREEN);
+     P[1][idx].player = 2;
+        P[1][idx].dimensiune = i*10;
+        P[1][idx].peTabla = false;
+        P[1][idx].sub = nullptr;
+        idx++;
+
+     deseneazaCerc(getmaxx() - 100, 50 + 65 * i, 10 * i, GREEN);
+      P[1][idx].player = 2;
+        P[1][idx].dimensiune = i;
+        P[1][idx].peTabla = false;
+        P[1][idx].sub = nullptr;
+        idx++;
+}
+}
+bool esteClickInCerc(int clickX, int clickY, int centruX, int centruY, int raza) {
+    int dx = clickX - centruX;
+    int dy = clickY - centruY;
+    return (dx * dx + dy * dy) <= (raza * raza);
+}
+///const int x = 150, y = 100, latura = 100;
+const int DIMENSIUNE_TABLA = 3;
+
+int tabla[DIMENSIUNE_TABLA][DIMENSIUNE_TABLA] = {0};
+int centruX, centruY, raza;
+bool poatePunePiesa(int linie, int coloana, int dimensiune) {
+    // Verificăm dacă există o piesă în celula respectivă
+    if (T[linie][coloana].ctPiese > 0) {
+        // Comparăm dimensiunea piesei curente cu dimensiunea piesei de pe vârful stivei
+        if (T[linie][coloana].stiva->dimensiune >= dimensiune) {
+            return false; // Nu putem pune piesa dacă este mai mică sau egală cu cea existentă
+        }
+    }
+    return true; // Dacă celula este goală sau piesa curentă este mai mare
+}
+
+void actualizeazaTabla(int linie, int coloana, int dimensiune) {
+    tabla[linie][coloana] = dimensiune;
+}
+bool WinCases(cell T[3][3]){
+    int i;
+    ///LINIE
+    for(i=0;i<3;i++){
+        if(T[i][0].ctPiese && T[i][1].ctPiese && T[i][2].ctPiese && T[i][0].stiva->player == T[i][1].stiva->player && T[i][0].stiva->player == T[i][2].stiva->player)
+            {winner=T[i][0].stiva->player;return 1;}
+    }
+
+    ///COLOANA
+    for(i=0;i<3;i++){
+        if(T[0][i].ctPiese && T[1][i].ctPiese && T[2][i].ctPiese && T[0][i].stiva->player == T[1][i].stiva->player && T[0][i].stiva->player == T[2][i].stiva->player)
+            {winner=T[0][i].stiva->player;return 1;}
+    }
+
+    ///DIAGONALE
+    if(T[0][0].ctPiese && T[1][1].ctPiese && T[2][2].ctPiese &&T[0][0].stiva->player==T[1][1].stiva->player && T[0][0].stiva->player==T[2][2].stiva->player)
+        {winner=T[0][0].stiva->player;return 1;}
+    if(T[0][2].ctPiese && T[1][1].ctPiese && T[2][0].ctPiese && T[0][2].stiva->player==T[1][1].stiva->player && T[1][1].stiva->player==T[2][0].stiva->player)
+        {winner=T[1][1].stiva->player;return 1;}
+
+    return 0;
+}
+piesa* scoatePiesaDinStiva(int linie, int coloana) {
+    if (T[linie][coloana].ctPiese > 0) {
+        piesa* piesaScoasa = T[linie][coloana].stiva; // Salvează piesa din vârful stivei
+        T[linie][coloana].stiva = piesaScoasa->sub;   // Actualizează vârful stivei
+        T[linie][coloana].ctPiese--;   // Decrementează numărul de piese
+
+        if (T[linie][coloana].ctPiese == 0) {
+            T[linie][coloana].stiva = nullptr; // Stiva devine goală
+        }
+
+        return piesaScoasa; // Returnează piesa scoasă
+    }
+    return nullptr; // Dacă stiva este goală
+}
+
+
+void selectare_pion()
+{
+     bool selectat = false;
+    int culoareSelectata = 0;
+    int dimensiuneSelectata = 0;
+    int ok=1;
+    while (true) {
+            int idx;
+        if (ismouseclick(WM_LBUTTONDOWN)) {
+            clearmouseclick(WM_LBUTTONDOWN);
+            int mouseX = mousex();
+            int mouseY = mousey();
+
+            if (!selectat) {
+                // Selectarea unui pion
+                for (int i = 1; i <= 3; i++) {
+                    // Pioni roșii
+                    if (mouseX < 150 && ok==1) {
+                        centruX = (mouseX < 65) ? 30 : 100;
+                        if(centruX==30)
+                            idx=0;
+                        else idx=1;
+                        centruY = 50 + 65 * i;
+                        raza = 10 * i;
+
+                        if (esteClickInCerc(mouseX, mouseY, centruX, centruY, raza)) {
+                            selectat = true;
+                            culoareSelectata = RED;
+                            dimensiuneSelectata = 10 * i;
+                            setcolor(BLACK);
+                            setfillstyle(SOLID_FILL, BLACK);
+                            fillellipse(centruX, centruY, raza, raza);
+                            ok=2;
+                            break;
+                        }
+                        idx=idx+2;
+                    }
+                    // Pioni verzi
+                    if (mouseX > getmaxx() - 150 && ok==2) {
+                        centruX = (mouseX > getmaxx() - 65) ? getmaxx() - 30 : getmaxx() - 100;
+                        centruY = 50 + 65 * i;
+                        if(centruX==getmaxx()-30)
+                            idx=0;
+                        else idx=1;
+                        raza = 10 * i;
+
+                        if (esteClickInCerc(mouseX, mouseY, centruX, centruY, raza)) {
+                            selectat = true;
+                            culoareSelectata = GREEN;
+                            dimensiuneSelectata = 10 * i;
+                            setcolor(BLACK);
+                            setfillstyle(SOLID_FILL, BLACK);
+                            fillellipse(centruX, centruY, raza, raza);
+                            ok=1;
+                            break;
+                        }
+                        idx=idx+2;
+                    }
+
+                    //Pt alea de pe tabla pe care vreau sa le mut
+                    if(mouseX > 150 && mouseX < getmaxx() - 150)
+                    {if(ok==1){
+
+                         int linie = (mouseY - y) / latura;
+                         int coloana = (mouseX - x) / latura;
+
+                         if (T[linie][coloana].ctPiese != 0 && T[linie][coloana].stiva->player == 1) {
+                            piesa* piesaSelectata = scoatePiesaDinStiva(linie, coloana);
+                            if (piesaSelectata != nullptr) {
+                                selectat = true;
+                                culoareSelectata = RED;
+                                dimensiuneSelectata = piesaSelectata->dimensiune;
+                                // Marchează vizual scoaterea piesei
+                                deseneazaCerc(x + coloana * latura + latura / 2, y + linie * latura + latura / 2,30, BLACK);
+                                 if (T[linie][coloana].ctPiese > 0){
+                                        if(T[linie][coloana].stiva->player==1)
+                               deseneazaCerc(x + coloana * latura + latura / 2, y + linie * latura + latura / 2, T[linie][coloana].stiva->dimensiune,RED);
+                               else if(T[linie][coloana].stiva->player==2)
+                               deseneazaCerc(x + coloana * latura + latura / 2, y + linie * latura + latura / 2, T[linie][coloana].stiva->dimensiune,GREEN);
+                                 }
+
+                                ok=2;
+                                break;
+    }
+}
+
+                         }
+                         else if(ok==2){
+                         int linie = (mouseY - y) / latura;
+                         int coloana = (mouseX - x) / latura;
+                         if(T[linie][coloana].ctPiese != 0 )
+                         if (T[linie][coloana].ctPiese != 0 && T[linie][coloana].stiva->player == 2) {
+                            piesa* piesaSelectata = scoatePiesaDinStiva(linie, coloana);
+                            if (piesaSelectata != nullptr) {
+                                selectat = true;
+                                culoareSelectata = GREEN;
+                                dimensiuneSelectata = piesaSelectata->dimensiune;
+                                // Marchează vizual scoaterea piesei
+                                deseneazaCerc(x + coloana * latura + latura / 2, y + linie * latura + latura / 2, 30, BLACK);
+                                 if (T[linie][coloana].ctPiese > 0){
+                                        if(T[linie][coloana].stiva->player==1)
+                               deseneazaCerc(x + coloana * latura + latura / 2, y + linie * latura + latura / 2, T[linie][coloana].stiva->dimensiune,RED);
+                               else if(T[linie][coloana].stiva->player==2)
+                               deseneazaCerc(x + coloana * latura + latura / 2, y + linie * latura + latura / 2, T[linie][coloana].stiva->dimensiune,GREEN);
+                                 }
+
+
+                                ok=1;
+                                break;
+    }
+}
+
+                         }
+
+                }
+
+
+
+            }
+}            else {
+
+                int linie = (mouseY - y) / latura;
+                int coloana = (mouseX - x) / latura;
+
+                if (linie >= 0 && linie < DIMENSIUNE_TABLA && coloana >= 0 && coloana < DIMENSIUNE_TABLA) {
+                    if (poatePunePiesa(linie, coloana, dimensiuneSelectata)) {
+                        centruX = x + coloana * latura + latura / 2;
+                        centruY = y + linie * latura + latura / 2;
+
+
+                        deseneazaCerc(centruX, centruY, dimensiuneSelectata, culoareSelectata);
+                       /** piesa *p=T[latura][coloana].stiva;
+
+                        p->sub=T[latura][coloana].stiva;
+                        T[latura][coloana].stiva=p;                       ///CE SE INTAMPLA
+                          T[latura][coloana].ctPiese++;
+                        p->peTabla=1;**/
+                        piesa *p = new piesa;
+                        p->player = (culoareSelectata == RED) ? 1 : 2;
+                        p->dimensiune = dimensiuneSelectata ;
+                        p->peTabla = true;
+                        p->sub = T[linie][coloana].stiva;
+                        T[linie][coloana].stiva = p; // Adaugă piesa la stivă
+                        T[linie][coloana].ctPiese++;
+                        p->peTabla=1;
+
+                      if( WinCases(T))
+                      {
+                          cleardevice();
+
+    settextstyle(3, HORIZ_DIR, 4);
+    settextjustify(CENTER_TEXT, CENTER_TEXT);
+    setcolor(RED);
+    if(winner==1)
+    outtextxy(320, 25, "RED");
+    else outtextxy(320, 25, "GREEN");
+
+   // closegraph();
+                      }
+                        selectat = false;
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+
+int main()
+{
+    deschideGrafica();
+    cleardevice();
+
+    settextstyle(3, HORIZ_DIR, 4);
+    settextjustify(CENTER_TEXT, CENTER_TEXT);
+    setcolor(RED);
+    outtextxy(320, 25, "GOBBLET");
+    setcolor(GREEN);
+    outtextxy(320, 50, "GOBBLERS");
+
+    setbkcolor(WHITE);
+
+    initTabla();
+selectare_pion();
+while (!kbhit()) {
+ while (true) {
+        if (kbhit()) { // Detectează dacă o tastă a fost apăsată
+            char ch = getch();
+            if (ch == 27) { // Dacă tasta apăsată este ESC (cod ASCII 27), închide fereastra
+                break;
+            }
+        }
+    }
+}
+
+
+    closegraph();
+
+    return 0;
+}
